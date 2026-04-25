@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CodeMind" />
+  <meta name="theme-color" content="#08080f" />
+  <meta name="description" content="Tu asistente de programación con IA" />
+  <title>CodeMind</title>
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2308080f'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E%E2%9A%99%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #08080f; --bg2: #0a0a18; --bg3: #111127;
+      --borde: #1e1e30; --borde2: #2a2a3a;
+      --texto: #e2e8f0; --texto2: #94a3b8; --texto3: #5a5a7a;
+      --acento: #6366f1; --acento2: #0ea5e9;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--texto); font-family: 'Syne', sans-serif; overflow: hidden; }
+    #app { display: flex; flex-direction: column; height: 100%; height: -webkit-fill-available; }
+
+    /* CABECERA */
+    .cabecera {
+      padding: calc(var(--safe-top) + 14px) 20px 14px;
+      background: var(--bg2); border-bottom: 1px solid var(--borde);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icono {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--acento2), var(--acento));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; box-shadow: 0 0 16px #6366f155;
+    }
+    .logo h1 {
+      font-size: 18px; font-weight: 800;
+      background: linear-gradient(90deg, var(--acento2), var(--acento));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo p { font-size: 9px; color: var(--texto3); letter-spacing: 1.5px; text-transform: uppercase; }
+    .btn-limpiar {
+      background: transparent; border: 1px solid var(--borde2); color: var(--texto3);
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+      font-family: 'Syne', sans-serif; display: none;
+    }
+    .btn-limpiar.visible { display: block; }
+
+    /* MODOS */
+    .modos {
+      display: flex; padding: 10px 12px; gap: 6px;
+      background: var(--bg2); border-bottom: 1px solid var(--borde);
+      overflow-x: auto; -webkit-overflow-scrolling: touch; flex-shrink: 0; scrollbar-width: none;
+    }
+    .modos::-webkit-scrollbar { display: none; }
+    .modo-btn {
+      padding: 8px 14px; border-radius: 8px; border: 1px solid var(--borde2);
+      background: transparent; color: var(--texto3); font-size: 12px; font-weight: 600;
+      white-space: nowrap; cursor: pointer; font-family: 'Syne', sans-serif; transition: all 0.2s;
+    }
+    .modo-btn.activo { border-color: var(--acento); background: #6366f122; color: #818cf8; }
+
+    /* LENGUAJES */
+    .lenguajes {
+      display: flex; padding: 8px 12px; gap: 6px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      background: var(--bg); border-bottom: 1px solid var(--borde);
+      flex-shrink: 0; scrollbar-width: none;
+    }
+    .lenguajes::-webkit-scrollbar { display: none; }
+    .lenguajes.oculto { display: none; }
+    .lang-pill {
+      padding: 4px 11px; border-radius: 6px; border: 1px solid var(--borde2);
+      background: transparent; color: var(--texto3); font-size: 11px;
+      font-family: 'JetBrains Mono', monospace; cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+    .lang-pill.activo { border-color: var(--acento2); background: #0ea5e922; color: #38bdf8; }
+
+    /* CHAT */
+    .chat { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px; }
+    .estado-vacio {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%; opacity: 0.5; text-align: center; gap: 10px;
+    }
+    .estado-vacio .icono { font-size: 44px; }
+    .estado-vacio h2 { font-size: 16px; font-weight: 600; color: #4a4a8a; }
+    .estado-vacio p { font-size: 13px; color: #3a3a5a; }
+
+    .mensaje { display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-start; }
+    .mensaje.usuario { flex-direction: row-reverse; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+    .mensaje.usuario .avatar { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .mensaje.ia .avatar { background: linear-gradient(135deg, var(--acento2), #06b6d4); }
+    .burbuja { max-width: 82%; padding: 12px 14px; font-size: 14px; line-height: 1.65; }
+    .mensaje.usuario .burbuja {
+      background: linear-gradient(135deg, #1e1b4b, #2e1065);
+      border: 1px solid #4338ca44; border-radius: 14px 4px 14px 14px;
+      color: var(--texto); white-space: pre-wrap;
+    }
+    .mensaje.ia .burbuja {
+      background: var(--bg3); border: 1px solid var(--borde2);
+      border-radius: 4px 14px 14px 14px; color: #cbd5e1;
+    }
+
+    /* BLOQUE CÓDIGO */
+    .bloque-codigo { margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--borde2); }
+    .codigo-cabecera {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 12px; background: #16162a; border-bottom: 1px solid var(--borde2);
+    }
+    .codigo-lang { font-size: 10px; color: #7c7caa; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
+    .btn-copiar {
+      background: transparent; border: 1px solid var(--borde2); color: var(--texto3);
+      padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
+      font-family: 'Syne', sans-serif; transition: all 0.2s;
+    }
+    .btn-copiar.copiado { border-color: #22c55e; color: #22c55e; background: #22c55e22; }
+    pre { margin: 0; padding: 14px; background: #0d0d1a; overflow-x: auto; font-size: 12.5px; line-height: 1.6; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; }
+
+    /* TYPING */
+    .typing { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+    .typing-burbuja { padding: 12px 16px; background: var(--bg3); border: 1px solid var(--borde2); border-radius: 4px 14px 14px 14px; display: flex; gap: 5px; align-items: center; }
+    .punto { width: 7px; height: 7px; border-radius: 50%; background: var(--acento); animation: pulso 1.2s infinite; }
+    .punto:nth-child(2) { animation-delay: 0.2s; }
+    .punto:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulso { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
+
+    .error { background: #ef444411; border: 1px solid #ef4444; border-radius: 8px; padding: 10px 14px; color: #f87171; font-size: 13px; margin-bottom: 12px; }
+
+    /* BANNER INSTALACIÓN */
+    .banner {
+      background: linear-gradient(135deg, #1e1b4b, #0c1a2e);
+      border: 1px solid #4338ca44; border-radius: 10px; padding: 12px 14px;
+      margin-bottom: 10px; font-size: 12px; color: #a5b4fc; line-height: 1.7; display: none;
+    }
+    .banner.visible { display: block; }
+    .banner strong { color: #818cf8; }
+    .banner-cerrar { float: right; background: none; border: none; color: #6366f1; cursor: pointer; font-size: 14px; margin-left: 8px; }
+
+    /* INPUT */
+    .input-area {
+      border-top: 1px solid var(--borde); padding: 12px 14px calc(var(--safe-bottom) + 12px);
+      background: var(--bg2); flex-shrink: 0;
+    }
+    .input-fila { display: flex; gap: 10px; align-items: flex-end; }
+    textarea {
+      flex: 1; background: var(--bg3); border: 1px solid var(--borde2); border-radius: 12px;
+      padding: 12px 14px; color: var(--texto); font-size: 14px; resize: none; outline: none;
+      font-family: 'Syne', sans-serif; line-height: 1.5; -webkit-appearance: none;
+      transition: border-color 0.2s; max-height: 120px;
+    }
+    textarea:focus { border-color: var(--acento); }
+    textarea.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .btn-enviar {
+      width: 44px; height: 44px; border-radius: 12px; border: none;
+      font-size: 18px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-enviar:enabled { background: linear-gradient(135deg, var(--acento), var(--acento2)); box-shadow: 0 0 16px #6366f155; }
+    .btn-enviar:disabled { background: #1a1a2e; color: #3a3a5a; cursor: not-allowed; }
+    .ayuda { font-size: 10px; color: var(--texto3); text-align: right; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="cabecera">
+    <div class="logo">
+      <div class="logo-icono">⚙</div>
+      <div>
+        <h1>CodeMind</h1>
+        <p>Asistente de programación</p>
+      </div>
+    </div>
+    <button class="btn-limpiar" id="btnLimpiar" onclick="limpiarChat()">✕ Limpiar</button>
+  </div>
+
+  <div class="modos">
+    <button class="modo-btn activo" onclick="cambiarModo('generar',this)">⚡ Generar código</button>
+    <button class="modo-btn" onclick="cambiarModo('explicar',this)">🔍 Explicar código</button>
+    <button class="modo-btn" onclick="cambiarModo('comparar',this)">⚖️ Comparar lenguajes</button>
+  </div>
+
+  <div class="lenguajes" id="lenguajes">
+    <span style="font-size:11px;color:var(--texto3);align-self:center;white-space:nowrap">Lenguaje:</span>
+    <button class="lang-pill" onclick="elegirLang('Python',this)">Python</button>
+    <button class="lang-pill" onclick="elegirLang('JavaScript',this)">JavaScript</button>
+    <button class="lang-pill" onclick="elegirLang('TypeScript',this)">TypeScript</button>
+    <button class="lang-pill" onclick="elegirLang('Rust',this)">Rust</button>
+    <button class="lang-pill" onclick="elegirLang('Go',this)">Go</button>
+    <button class="lang-pill" onclick="elegirLang('Java',this)">Java</button>
+    <button class="lang-pill" onclick="elegirLang('C++',this)">C++</button>
+    <button class="lang-pill" onclick="elegirLang('C#',this)">C#</button>
+    <button class="lang-pill" onclick="elegirLang('Swift',this)">Swift</button>
+    <button class="lang-pill" onclick="elegirLang('Kotlin',this)">Kotlin</button>
+    <button class="lang-pill" onclick="elegirLang('PHP',this)">PHP</button>
+    <button class="lang-pill" onclick="elegirLang('Ruby',this)">Ruby</button>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="estado-vacio" id="estadoVacio">
+      <div class="icono">⚡</div>
+      <h2>Generar código</h2>
+      <p>Escribe lo que necesitas y te lo genero</p>
+    </div>
+    <div class="banner" id="banner">
+      <button class="banner-cerrar" onclick="cerrarBanner()">✕</button>
+      📱 <strong>Instalar en iPhone:</strong> abre esta página en <strong>Safari</strong>, toca el botón <strong>Compartir</strong> (□↑) y selecciona <strong>"Añadir a pantalla de inicio"</strong>.
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-fila">
+      <textarea id="inputTexto" rows="2" placeholder="Ej: función para ordenar una lista en Python..."></textarea>
+      <button class="btn-enviar" id="btnEnviar" onclick="enviar()" disabled>➤</button>
+    </div>
+    <p class="ayuda">Intro para enviar · Shift+Intro para nueva línea</p>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM = `Eres CodeMind, un asistente experto en TODOS los lenguajes de programación. Debes:
+- Generar código funcional, limpio y comentado
+- Explicar código de forma clara, línea por línea si es necesario
+- Comparar lenguajes con datos objetivos sobre rendimiento, ecosistema y usos
+- Responder SIEMPRE en español
+- Usar bloques de código con el lenguaje correspondiente
+- Ser preciso, conciso y completo`;
+
+let modo = 'generar', lang = '', mensajes = [], cargando = false;
+
+const vacio = {
+  generar: { icono:'⚡', titulo:'Generar código', desc:'Escribe lo que necesitas y te lo genero' },
+  explicar: { icono:'🔍', titulo:'Explicar código', desc:'Pega el código que quieres entender' },
+  comparar: { icono:'⚖️', titulo:'Comparar lenguajes', desc:'Ej: Python vs JavaScript para backend' }
+};
+const ph = {
+  generar: 'Ej: función para ordenar una lista en Python...',
+  explicar: 'Pega aquí el código que quieres entender...',
+  comparar: 'Ej: Python vs JavaScript para backend...'
+};
+
+// Mostrar banner solo en iOS Safari sin estar instalada
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+if (esIOS) document.getElementById('banner').classList.add('visible');
+
+function cerrarBanner() { document.getElementById('banner').classList.remove('visible'); }
+
+function cambiarModo(m, btn) {
+  modo = m;
+  document.querySelectorAll('.modo-btn').forEach(b => b.classList.remove('activo'));
+  btn.classList.add('activo');
+  document.getElementById('lenguajes').classList.toggle('oculto', m !== 'generar');
+  const ta = document.getElementById('inputTexto');
+  ta.placeholder = ph[m];
+  ta.className = m === 'explicar' ? 'mono' : '';
+  const v = vacio[m];
+  const ev = document.getElementById('estadoVacio');
+  ev.innerHTML = `<div class="icono">${v.icono}</div><h2>${v.titulo}</h2><p>${v.desc}</p>`;
+  if (!mensajes.length) ev.style.display = 'flex';
+}
+
+function elegirLang(l, btn) {
+  if (lang === l) { lang = ''; btn.classList.remove('activo'); }
+  else { document.querySelectorAll('.lang-pill').forEach(b => b.classList.remove('activo')); lang = l; btn.classList.add('activo'); }
+}
+
+document.getElementById('inputTexto').addEventListener('input', function() {
+  document.getElementById('btnEnviar').disabled = !this.value.trim() || cargando;
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+document.getElementById('inputTexto').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+});
+
+function construirPrompt(t) {
+  if (modo === 'generar' && lang) return `Genera código en ${lang}: ${t}`;
+  if (modo === 'explicar') return `Explica este código detalladamente:\n\n${t}`;
+  if (modo === 'comparar') return `Compara: ${t}`;
+  return t;
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function parsear(texto) {
+  const partes = [];
+  const re = /```(\w+)?\n?([\s\S]*?)```/g;
+  let ul = 0, m;
+  while ((m = re.exec(texto)) !== null) {
+    if (m.index > ul) partes.push(`<p style="margin:4px 0;white-space:pre-wrap">${esc(texto.slice(ul, m.index))}</p>`);
+    const id = 'c' + Math.random().toString(36).slice(2,8);
+    const cod = m[2].trim();
+    partes.push(`<div class="bloque-codigo"><div class="codigo-cabecera"><span class="codigo-lang">${m[1]||'código'}</span><button class="btn-copiar" id="${id}" onclick="copiar('${id}',this)">Copiar</button></div><pre><code>${esc(cod)}</code></pre></div>`);
+    ul = re.lastIndex;
+  }
+  if (ul < texto.length) partes.push(`<p style="margin:4px 0;white-space:pre-wrap">${esc(texto.slice(ul))}</p>`);
+  return partes.join('');
+}
+
+// Guardar código por id para copiar
+const codigos = {};
+function copiar(id, btn) {
+  if (!codigos[id]) return;
+  navigator.clipboard.writeText(codigos[id]).then(() => {
+    btn.textContent = '✓ Copiado'; btn.classList.add('copiado');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copiado'); }, 2000);
+  });
+}
+
+function parsearConIds(texto) {
+  const partes = [];
+  const re = /```(\w+)?\n?([\s\S]*?)```/g;
+  let ul = 0, m;
+  while ((m = re.exec(texto)) !== null) {
+    if (m.index > ul) partes.push(`<p style="margin:4px 0;white-space:pre-wrap">${esc(texto.slice(ul, m.index))}</p>`);
+    const id = 'c' + Math.random().toString(36).slice(2,8);
+    const cod = m[2].trim();
+    codigos[id] = cod;
+    partes.push(`<div class="bloque-codigo"><div class="codigo-cabecera"><span class="codigo-lang">${m[1]||'código'}</span><button class="btn-copiar" id="${id}" onclick="copiar('${id}',this)">Copiar</button></div><pre><code>${esc(cod)}</code></pre></div>`);
+    ul = re.lastIndex;
+  }
+  if (ul < texto.length) partes.push(`<p style="margin:4px 0;white-space:pre-wrap">${esc(texto.slice(ul))}</p>`);
+  return partes.join('');
+}
+
+function agregarMensaje(rol, contenido) {
+  const chat = document.getElementById('chat');
+  document.getElementById('estadoVacio').style.display = 'none';
+  const div = document.createElement('div');
+  div.className = `mensaje ${rol === 'user' ? 'usuario' : 'ia'}`;
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.textContent = rol === 'user' ? '👤' : '🤖';
+  const bur = document.createElement('div');
+  bur.className = 'burbuja';
+  if (rol === 'user') bur.textContent = contenido;
+  else bur.innerHTML = parsearConIds(contenido);
+  div.appendChild(av);
+  div.appendChild(bur);
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function mostrarTyping() {
+  const chat = document.getElementById('chat');
+  const d = document.createElement('div');
+  d.className = 'typing'; d.id = 'typing';
+  d.innerHTML = `<div class="avatar" style="background:linear-gradient(135deg,#0ea5e9,#06b6d4)">🤖</div><div class="typing-burbuja"><div class="punto"></div><div class="punto"></div><div class="punto"></div></div>`;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function quitarTyping() { document.getElementById('typing')?.remove(); }
+
+async function enviar() {
+  const ta = document.getElementById('inputTexto');
+  const texto = ta.value.trim();
+  if (!texto || cargando) return;
+  const prompt = construirPrompt(texto);
+  mensajes.push({ role:'user', content:prompt });
+  agregarMensaje('user', texto);
+  ta.value = ''; ta.style.height = 'auto';
+  document.getElementById('btnEnviar').disabled = true;
+  document.getElementById('btnLimpiar').classList.add('visible');
+  cerrarBanner();
+  cargando = true;
+  mostrarTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: mensajes.map(m => ({ role:m.role, content:m.content }))
+      })
+    });
+    const data = await res.json();
+    const respuesta = data.content?.map(b => b.text||'').join('') || 'Sin respuesta.';
+    mensajes.push({ role:'assistant', content:respuesta });
+    quitarTyping();
+    agregarMensaje('assistant', respuesta);
+  } catch(e) {
+    quitarTyping();
+    const err = document.createElement('div');
+    err.className = 'error';
+    err.textContent = '⚠️ Error de conexión. Comprueba tu internet e inténtalo de nuevo.';
+    document.getElementById('chat').appendChild(err);
+  } finally {
+    cargando = false;
+  }
+}
+
+function limpiarChat() {
+  mensajes = [];
+  const chat = document.getElementById('chat');
+  Array.from(chat.children).forEach(c => { if (c.id !== 'estadoVacio' && c.id !== 'banner') c.remove(); });
+  document.getElementById('estadoVacio').style.display = 'flex';
+  document.getElementById('btnLimpiar').classList.remove('visible');
+}
+</script>
+</body>
+</html>
